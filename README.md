@@ -190,6 +190,13 @@ uv run mypy src
 uv run pytest
 ```
 
+## Releasing
+
+Set the version in `src/onemax/_version.py`, add a `## x.y.z` section to `CHANGELOG.md`, commit, then push a tag
+`vx.y.z`. The `Publish` workflow checks that the tag equals the package version, runs the checks,
+publishes to PyPI and creates the GitHub release from the changelog section. A tag that does not match the
+version publishes nothing.
+
 ## License
 
 MIT

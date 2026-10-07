@@ -1,0 +1,58 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Check the tag matches the package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          declared="$(uv run python -c 'from importlib.metadata import version; print(version("onemax"))')"
+          imported="$(uv run python -c 'import onemax; print(onemax.__version__)')"
+          echo "tag $tag, pyproject $declared, module $imported"
+          test "$tag" = "$declared"
+          test "$tag" = "$imported"
+      - run: uv run ruff check .
+      - run: uv run mypy src
+      - run: uv run pytest
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Take the notes from the changelog
+        run: |
+          awk -v version="${GITHUB_REF_NAME#v}" '
+            /^## / { found = ($2 == version); next }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
