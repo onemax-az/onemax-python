@@ -18,6 +18,14 @@ class Reason(str, Enum):
         return self.value
 
 
+class Mode(str, Enum):
+    LIVE = "live"
+    TEST = "test"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class UsageStatus(str, Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
@@ -36,6 +44,14 @@ def _known(kind: type[Known], value: Any) -> Known | str:
         return kind(text)
     except ValueError:
         return text
+
+
+def _mode(value: Any) -> Mode | str | None:
+    return None if value is None else _known(Mode, value)
+
+
+def mode_of_key(api_key: str) -> Mode:
+    return Mode.TEST if api_key.startswith("omx_test_") else Mode.LIVE
 
 
 def _moment(value: Any) -> datetime:
@@ -75,6 +91,7 @@ class Context:
     venue_name: str
     daily_limit: int
     offers: tuple[Offer, ...]
+    mode: Mode | str | None = None
 
     @classmethod
     def parse(cls, body: dict[str, Any]) -> Context:
@@ -84,6 +101,7 @@ class Context:
             venue_name=str(body["venue_name"]),
             daily_limit=int(body["daily_limit"]),
             offers=tuple(Offer.parse(item) for item in body.get("offers") or ()),
+            mode=_mode(body.get("mode")),
         )
 
 
@@ -94,6 +112,7 @@ class Verification:
     reason: Reason | str
     usage_id: str | None
     daily_limit: int
+    mode: Mode | str | None = None
 
     @classmethod
     def parse(cls, body: dict[str, Any]) -> Verification:
@@ -103,6 +122,7 @@ class Verification:
             reason=_known(Reason, body["reason"]),
             usage_id=_maybe_text(body.get("usage_id")),
             daily_limit=int(body["daily_limit"]),
+            mode=_mode(body.get("mode")),
         )
 
 
@@ -114,6 +134,7 @@ class Usage:
     created_at: datetime
     confirmed_at: datetime | None
     voided_at: datetime | None
+    mode: Mode | str | None = None
 
     @classmethod
     def parse(cls, body: dict[str, Any]) -> Usage:
@@ -124,6 +145,7 @@ class Usage:
             created_at=_moment(body["created_at"]),
             confirmed_at=_maybe_moment(body.get("confirmed_at")),
             voided_at=_maybe_moment(body.get("voided_at")),
+            mode=_mode(body.get("mode")),
         )
 
 
@@ -131,17 +153,27 @@ class Usage:
 class LinkToken:
     link_token: str
     active: bool
+    mode: Mode | str | None = None
 
     @classmethod
     def parse(cls, body: dict[str, Any]) -> LinkToken:
-        return cls(link_token=str(body["link_token"]), active=bool(body["active"]))
+        return cls(
+            link_token=str(body["link_token"]),
+            active=bool(body["active"]),
+            mode=_mode(body.get("mode")),
+        )
 
 
 @dataclass(frozen=True)
 class LinkStatus:
     linked: bool
     active: bool
+    mode: Mode | str | None = None
 
     @classmethod
     def parse(cls, body: dict[str, Any]) -> LinkStatus:
-        return cls(linked=bool(body["linked"]), active=bool(body["active"]))
+        return cls(
+            linked=bool(body["linked"]),
+            active=bool(body["active"]),
+            mode=_mode(body.get("mode")),
+        )

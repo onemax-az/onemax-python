@@ -13,7 +13,17 @@ from .errors import (
     ServerError,
     TransportError,
 )
-from .models import Context, LinkStatus, LinkToken, Offer, Reason, Usage, UsageStatus, Verification
+from .models import (
+    Context,
+    LinkStatus,
+    LinkToken,
+    Mode,
+    Offer,
+    Reason,
+    Usage,
+    UsageStatus,
+    Verification,
+)
 from .pkce import Pkce, challenge_for, generate_pkce
 
 __all__ = [
@@ -26,6 +36,7 @@ __all__ = [
     "InvalidRequestError",
     "LinkStatus",
     "LinkToken",
+    "Mode",
     "NotFoundError",
     "Offer",
     "OneMaxClient",
