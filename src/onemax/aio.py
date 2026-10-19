@@ -9,7 +9,7 @@ from . import _endpoints as ep
 from . import _transport
 from ._transport import API_URL, DEFAULT_TIMEOUT, SITE_URL
 from .errors import TransportError
-from .models import Context, LinkStatus, LinkToken, Usage, Verification
+from .models import Context, LinkStatus, LinkToken, Mode, Usage, Verification, mode_of_key
 
 
 class AsyncOneMaxClient:
@@ -22,7 +22,9 @@ class AsyncOneMaxClient:
         timeout: float = DEFAULT_TIMEOUT,
         transport: httpx.AsyncClient | None = None,
     ) -> None:
-        self._headers = _transport.headers(_transport.checked_key(api_key))
+        key = _transport.checked_key(api_key)
+        self._headers = _transport.headers(key)
+        self.mode: Mode = mode_of_key(key)
         self.base_url = base_url.rstrip("/")
         self.site_url = site_url.rstrip("/")
         self._http = transport or httpx.AsyncClient(timeout=timeout)
